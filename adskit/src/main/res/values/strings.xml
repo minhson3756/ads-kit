@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Required native-ad attribution label. Consumers may override this key. -->
+    <string name="ad_attribution_label">Ad</string>
+</resources>

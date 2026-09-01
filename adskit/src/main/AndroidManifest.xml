@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      The Google Mobile Ads SDK merges the com.google.android.gms.permission.AD_ID
+      permission here. A consumer app that must declare "uses Advertising ID = No"
+      would strip it with tools:node="remove".
+
+      The AdMob APPLICATION_ID is supplied by the CONSUMER app via a manifest
+      placeholder — set it in the app module's build.gradle.kts:
+
+          defaultConfig { manifestPlaceholders["admobAppId"] = "ca-app-pub-XXXX~YYYY" }
+    -->
+    <application>
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+    </application>
+</manifest>
