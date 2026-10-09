@@ -2,6 +2,7 @@ package com.xnetheron.adskit.core
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import com.google.firebase.FirebaseApp
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.xnetheron.adskit.AdSlot
@@ -12,19 +13,23 @@ import org.json.JSONObject
 
 /**
  * Firebase Remote Config gate. `ADS_ACTIVE` is the master kill-switch (default
- * OFF), and **each [AdSlot] is ONE JSON param** `{"id": "...", "enable": true}` —
+ * [com.xnetheron.adskit.AdsConfig.defaultAdsActive], OFF unless the host opts in), and **each [AdSlot] is ONE JSON param** `{"id": "...", "enable": true}` —
  * so a slot's unit id and its own on/off toggle live together and change without
  * a release. Falls back to the host's per-flavor resource id + enabled when the RC
- * value is missing/blank/malformed. Requires the host to have Firebase configured;
- * if `FirebaseRemoteConfig.getInstance()` is unavailable everything falls back.
+ * value is missing/blank/malformed. Firebase is optional: if the host has no
+ * `google-services.json`, `FirebaseRemoteConfig.getInstance()` fails and everything falls back
+ * (ADS_ACTIVE = defaultAdsActive, every slot enabled with its resource id).
  */
 internal class AdsRemoteConfig(
     private val context: Context,
     private val slots: List<AdSlot>,
     private val defaultInterstitialMinIntervalSec: Long,
+    private val defaultAdsActive: Boolean,
 ) {
-    private val rc: FirebaseRemoteConfig? =
-        runCatching { FirebaseRemoteConfig.getInstance() }.getOrNull()
+    private val rc: FirebaseRemoteConfig? = runCatching {
+        // getInstance() throws when no FirebaseApp exists (host without google-services.json).
+        if (FirebaseApp.getApps(context).isEmpty()) null else FirebaseRemoteConfig.getInstance()
+    }.getOrNull()
 
     private val _configLoaded = MutableStateFlow(false)
     /** Flips true once the first fetch+activate completes (or immediately if
@@ -50,7 +55,7 @@ internal class AdsRemoteConfig(
         }
     }
 
-    val adsActive: Boolean get() = rc?.getBoolean(KEY_ADS_ACTIVE) ?: false
+    val adsActive: Boolean get() = rc?.getBoolean(KEY_ADS_ACTIVE) ?: defaultAdsActive
     val interstitialMinIntervalSec: Long
         get() = rc?.getLong(KEY_INT_MIN_INTERVAL) ?: defaultInterstitialMinIntervalSec
 
@@ -70,7 +75,7 @@ internal class AdsRemoteConfig(
     fun unitId(slot: AdSlot): String = configFor(slot).id
 
     private fun buildDefaults(): Map<String, Any> = buildMap {
-        put(KEY_ADS_ACTIVE, false)
+        put(KEY_ADS_ACTIVE, defaultAdsActive)
         put(KEY_INT_MIN_INTERVAL, defaultInterstitialMinIntervalSec)
         slots.forEach { slot ->
             put(

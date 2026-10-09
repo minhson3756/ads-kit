@@ -30,8 +30,14 @@ internal class AdMobService(
     /** Emits true once the SDK is initialized and consent + ADS_ACTIVE allow ads. */
     val ready: StateFlow<Boolean> = _ready.asStateFlow()
 
+    /** Pro removes ads. Re-evaluated on change so placements disappear (or return) immediately. */
     @Volatile
     var isPro: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            scope.launch { evaluate() }
+        }
 
     private var consentResolved = false
     private var initialized = false
@@ -45,6 +51,14 @@ internal class AdMobService(
         consent.gather(activity) {
             consentResolved = true
             evaluate()
+        }
+    }
+
+    /** Privacy options may have changed consent: re-check whether ads can be requested. */
+    fun showPrivacyOptions(activity: Activity, onDone: () -> Unit) {
+        consent.showPrivacyOptions(activity) {
+            evaluate()
+            onDone()
         }
     }
 
@@ -62,7 +76,7 @@ internal class AdMobService(
     }
 
     private fun refreshReady() {
-        _ready.value = initialized && remoteConfig.adsActive && !isPro
+        _ready.value = initialized && consent.canRequestAds && remoteConfig.adsActive && !isPro
     }
 
     /** True when [slot] may show now: SDK ready + slot enabled + not Pro. */

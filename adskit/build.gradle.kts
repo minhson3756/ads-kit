@@ -68,8 +68,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)
 
-    // Google Mobile Ads SDK + UMP consent.
-    implementation(libs.play.services.ads)
+    // Google Mobile Ads SDK + UMP consent. GMA is `api`: custom native placements take
+    // NativeAd / NativeAdView / MediaView in the public API.
+    api(libs.play.services.ads)
     implementation(libs.user.messaging.platform)
 }
 
@@ -83,7 +84,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.xnetheron"
                 artifactId = "adskit"
-                version = (project.findProperty("VERSION_NAME") as String?) ?: "0.1.0"
+                version = (project.findProperty("VERSION_NAME") as String?) ?: "0.2.0"
             }
         }
     }

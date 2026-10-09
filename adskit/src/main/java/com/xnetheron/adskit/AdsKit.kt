@@ -8,6 +8,8 @@ import com.xnetheron.adskit.core.AdsRemoteConfig
 import com.xnetheron.adskit.core.AppOpenAdManager
 import com.xnetheron.adskit.core.ConsentManager
 import com.xnetheron.adskit.core.InterstitialAdManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Public entry point to the ads library — a Hilt-free singleton facade so any app
@@ -46,13 +48,37 @@ object AdsKit {
         get() = if (isInitialized) adMob.isPro else false
         set(value) { if (isInitialized) adMob.isPro = value }
 
+    /**
+     * True once consent allows ads, the SDK is initialized, `ADS_ACTIVE` is on and the user isn't
+     * Pro. Collect it in custom placements (see [com.xnetheron.adskit.ui.rememberNativeAd]).
+     */
+    val ready: StateFlow<Boolean>
+        get() = if (isInitialized) adMob.ready else notReady
+
+    /** True when [slot] may show now: [ready] + the slot's Remote Config `enable` + not Pro. */
+    fun canShow(slot: AdSlot): Boolean = isInitialized && adMob.canShow(slot)
+
+    /** Ad unit id for [slot] (Remote Config JSON → host resource fallback). */
+    fun unitId(slot: AdSlot): String = adMob.unitId(slot)
+
+    /** EEA/UK users must be able to change consent: show a "Privacy options" entry while true. */
+    val privacyOptionsRequired: StateFlow<Boolean>
+        get() = if (isInitialized) consent.privacyOptionsRequired else notReady
+
+    /** Re-open the UMP consent form (host's "Privacy options" row); ads re-evaluate afterwards. */
+    fun showPrivacyOptions(activity: Activity, onDone: () -> Unit = {}) {
+        if (isInitialized) adMob.showPrivacyOptions(activity, onDone) else onDone()
+    }
+
+    private val notReady = MutableStateFlow(false)
+
     /** Call once from Application.onCreate. Safe to call again (no-op). */
     fun initialize(app: Application, config: AdsConfig) {
         if (isInitialized) return
         appContext = app.applicationContext
         this.config = config
-        remoteConfig = AdsRemoteConfig(appContext, config.slots, config.interstitialMinIntervalSec)
-        consent = ConsentManager(appContext)
+        remoteConfig = AdsRemoteConfig(appContext, config.slots, config.interstitialMinIntervalSec, config.defaultAdsActive)
+        consent = ConsentManager(appContext, config.consentDebug)
         adMob = AdMobService(appContext, consent, remoteConfig)
         interstitial = InterstitialAdManager(appContext, adMob, remoteConfig)
         val appOpenSlot = config.slots.firstOrNull { it.format == AdFormat.AppOpen }
