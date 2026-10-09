@@ -74,7 +74,7 @@ dependencies {
     implementation(libs.user.messaging.platform)
 }
 
-// JitPack publishes com.github.<user>:adskit:<tag>. group/version are injected by
+// JitPack publishes com.github.<user>:ads-kit:<tag> (artifact = repo name). group/version are injected by
 // JitPack from the repo + git tag; the defaults below make `publishToMavenLocal`
 // usable during local development (./gradlew :adskit:publishToMavenLocal).
 afterEvaluate {

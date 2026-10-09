@@ -23,7 +23,7 @@ dependencyResolutionManagement {
 App `build.gradle.kts`:
 ```kotlin
 dependencies {
-    implementation("com.github.minhson3756:adskit:<tag>")
+    implementation("com.github.minhson3756:ads-kit:<tag>")   // e.g. v0.2.0
 }
 android {
     defaultConfig {
