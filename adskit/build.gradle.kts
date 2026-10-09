@@ -84,7 +84,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.xnetheron"
                 artifactId = "adskit"
-                version = (project.findProperty("VERSION_NAME") as String?) ?: "0.2.0"
+                version = (project.findProperty("VERSION_NAME") as String?) ?: "0.3.0"
             }
         }
     }

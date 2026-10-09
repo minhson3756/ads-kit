@@ -24,6 +24,7 @@ internal class AdsRemoteConfig(
     private val context: Context,
     private val slots: List<AdSlot>,
     private val defaultInterstitialMinIntervalSec: Long,
+    private val defaultAppOpenMinIntervalSec: Long,
     private val defaultAdsActive: Boolean,
 ) {
     private val rc: FirebaseRemoteConfig? = runCatching {
@@ -58,6 +59,8 @@ internal class AdsRemoteConfig(
     val adsActive: Boolean get() = rc?.getBoolean(KEY_ADS_ACTIVE) ?: defaultAdsActive
     val interstitialMinIntervalSec: Long
         get() = rc?.getLong(KEY_INT_MIN_INTERVAL) ?: defaultInterstitialMinIntervalSec
+    val appOpenMinIntervalSec: Long
+        get() = rc?.getLong(KEY_APP_OPEN_MIN_INTERVAL) ?: defaultAppOpenMinIntervalSec
 
     fun configFor(slot: AdSlot): AdConfig {
         val fallbackId = context.getString(slot.fallbackResId)
@@ -77,6 +80,7 @@ internal class AdsRemoteConfig(
     private fun buildDefaults(): Map<String, Any> = buildMap {
         put(KEY_ADS_ACTIVE, defaultAdsActive)
         put(KEY_INT_MIN_INTERVAL, defaultInterstitialMinIntervalSec)
+        put(KEY_APP_OPEN_MIN_INTERVAL, defaultAppOpenMinIntervalSec)
         slots.forEach { slot ->
             put(
                 slot.rcKey,
@@ -91,6 +95,7 @@ internal class AdsRemoteConfig(
     companion object {
         const val KEY_ADS_ACTIVE = "ADS_ACTIVE"
         const val KEY_INT_MIN_INTERVAL = "ADS_INTERSTITIAL_MIN_INTERVAL_SEC"
+        const val KEY_APP_OPEN_MIN_INTERVAL = "ADS_APP_OPEN_MIN_INTERVAL_SEC"
         private const val MIN_FETCH_INTERVAL_SEC = 3600L
     }
 }

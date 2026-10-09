@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Bundle
 import android.os.SystemClock
+import com.google.android.gms.ads.AdActivity
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
 internal class AppOpenAdManager(
     private val context: Context,
     private val adMob: AdMobService,
+    private val remoteConfig: AdsRemoteConfig,
     private val slot: AdSlot?,
 ) : Application.ActivityLifecycleCallbacks {
 
@@ -42,6 +44,7 @@ internal class AppOpenAdManager(
     private var startedCount = 0
     private var isFirstForeground = true
     private var suspendNext = false
+    private var backgroundSinceFence = false
 
     private val allowed: Boolean
         get() = slot != null && adMob.canShow(slot)
@@ -52,7 +55,10 @@ internal class AppOpenAdManager(
         scope.launch { adMob.ready.collect { if (it) load() } }
     }
 
-    fun suspendNextForeground() { suspendNext = true }
+    fun suspendNextForeground() {
+        suspendNext = true
+        backgroundSinceFence = false
+    }
 
     private fun load() {
         val slot = slot ?: return
@@ -84,7 +90,9 @@ internal class AppOpenAdManager(
         if (isShowing || !allowed) { load(); return }
         val ready = ad
         if (ready == null || isExpired()) { ad = null; load(); return }
-        if (SystemClock.elapsedRealtime() - lastShownAtMs < MIN_INTERVAL_MS) return
+        if (SystemClock.elapsedRealtime() - lastShownAtMs < remoteConfig.appOpenMinIntervalSec * 1000L) return
+        // Never stack on another full-screen ad (e.g. an interstitial left open in the background).
+        if (activity is AdActivity) return
 
         isShowing = true
         ready.fullScreenContentCallback = object : FullScreenContentCallback() {
@@ -126,10 +134,14 @@ internal class AppOpenAdManager(
 
     override fun onActivityResumed(activity: Activity) {
         if (!isShowing) currentActivity = activity
+        // A fence whose launch never sent the app to the background (a dialog-style activity, an
+        // in-process ad activity) expires here, so it can't swallow the next real return.
+        if (suspendNext && startedCount > 0 && !backgroundSinceFence) suspendNext = false
     }
 
     override fun onActivityStopped(activity: Activity) {
         startedCount = (startedCount - 1).coerceAtLeast(0)
+        if (startedCount == 0) backgroundSinceFence = true
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
@@ -139,6 +151,5 @@ internal class AppOpenAdManager(
 
     private companion object {
         const val EXPIRY_MS = 4L * 60 * 60 * 1000   // AppOpenAd expires ~4h after load
-        const val MIN_INTERVAL_MS = 60_000L          // cooldown between app-opens
     }
 }

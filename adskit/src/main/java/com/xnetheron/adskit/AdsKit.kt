@@ -77,12 +77,14 @@ object AdsKit {
         if (isInitialized) return
         appContext = app.applicationContext
         this.config = config
-        remoteConfig = AdsRemoteConfig(appContext, config.slots, config.interstitialMinIntervalSec, config.defaultAdsActive)
+        remoteConfig = AdsRemoteConfig(
+            appContext, config.slots, config.interstitialMinIntervalSec, config.appOpenMinIntervalSec, config.defaultAdsActive,
+        )
         consent = ConsentManager(appContext, config.consentDebug)
         adMob = AdMobService(appContext, consent, remoteConfig)
         interstitial = InterstitialAdManager(appContext, adMob, remoteConfig)
         val appOpenSlot = config.slots.firstOrNull { it.format == AdFormat.AppOpen }
-        appOpen = AppOpenAdManager(appContext, adMob, appOpenSlot)
+        appOpen = AppOpenAdManager(appContext, adMob, remoteConfig, appOpenSlot)
         appOpen.register(app)
         isInitialized = true
     }
@@ -94,7 +96,9 @@ object AdsKit {
 
     /** Fence the NEXT return-to-foreground so it doesn't trigger an app-open ad.
      *  Call right before launching your own Activity (SAF picker, scanner, share,
-     *  permission dialog, in-app update…). */
+     *  browser, billing, in-app update…), or once for all of them by overriding
+     *  `startActivityForResult(Intent, Int, Bundle?)` in the host activity. The fence
+     *  expires by itself if the launch never sends the app to the background. */
     fun suspendNextForeground() {
         if (isInitialized) appOpen.suspendNextForeground()
     }

@@ -74,8 +74,13 @@ AdaptiveBannerAd(slot = AppAds.HomeBanner)
 AdsKit.preloadInterstitial(AppAds.ToolDone)
 AdsKit.maybeShowInterstitial(AppAds.ToolDone, activity) { navigateOn() }
 
-// Before launching your own Activity (SAF picker / scanner / share / permission)
+// Before launching your own Activity (SAF picker / scanner / share / browser / billing)
 AdsKit.suspendNextForeground()
+// …or once for every launch, in the host activity:
+// override fun startActivityForResult(intent: Intent, requestCode: Int, options: Bundle?) {
+//     AdsKit.suspendNextForeground(); super.startActivityForResult(intent, requestCode, options)
+// }
+// The fence expires by itself if the launch never sends the app to the background.
 
 // Pro removes ads; placements disappear (or come back) as soon as it changes
 AdsKit.isPro = billing.isSubscribed
@@ -129,7 +134,8 @@ by `rcKey`:
 ```json
 { "id": "ca-app-pub-XXXX/YYYY", "enable": true }
 ```
-Plus `ADS_INTERSTITIAL_MIN_INTERVAL_SEC` (NUMBER). Ads stay hidden until you flip
+Plus `ADS_INTERSTITIAL_MIN_INTERVAL_SEC` and `ADS_APP_OPEN_MIN_INTERVAL_SEC` (NUMBER;
+defaults from `AdsConfig.interstitialMinIntervalSec` / `appOpenMinIntervalSec`). Ads stay hidden until you flip
 `ADS_ACTIVE` on (its default is `AdsConfig.defaultAdsActive`).
 
 ## Notes

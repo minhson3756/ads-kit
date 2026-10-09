@@ -11,7 +11,9 @@ import androidx.annotation.FontRes
  *   whose [AdSlot.format] is [AdFormat.AppOpen] (if any) drives the app-open ad.
  * @param accentColor ARGB color for the native CTA button + accents. Default rose.
  * @param fontRes font applied to native-ad text; null → the system default.
- * @param interstitialMinIntervalSec minimum seconds between interstitials.
+ * @param interstitialMinIntervalSec minimum seconds between interstitials (Remote Config
+ *   `ADS_INTERSTITIAL_MIN_INTERVAL_SEC` overrides it).
+ * @param appOpenMinIntervalSec minimum seconds between app-open ads (`ADS_APP_OPEN_MIN_INTERVAL_SEC`).
  * @param defaultAdsActive `ADS_ACTIVE` before Remote Config answers, and always when the host has
  *   no Firebase configured. Keep false to make ads opt-in from the console; set true for apps that
  *   ship without Firebase.
@@ -22,6 +24,7 @@ data class AdsConfig(
     @get:ColorInt val accentColor: Int = DEFAULT_ACCENT,
     @get:FontRes val fontRes: Int? = null,
     val interstitialMinIntervalSec: Long = 60L,
+    val appOpenMinIntervalSec: Long = 60L,
     val defaultAdsActive: Boolean = false,
     val consentDebug: ConsentDebug? = null,
 ) {
